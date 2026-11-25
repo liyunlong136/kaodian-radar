@@ -4,7 +4,7 @@
 
 **在线地址**：`<待填：Qoder Sites 公网链接>`（已部署到 Qoder Sites 并设为公开访问）
 **赛道**：2026 Qoder 高校创造力大赛 · StudyHack 学习科研
-**Qoder 账号 UID**：`<待填>`
+**Qoder 账号 UID**：`1570990773834519`
 **开发方式**：开发与部署均由 Qoder 完成（Qoder Sites 站点工程 + Cloud Agents 后端）
 
 ---
