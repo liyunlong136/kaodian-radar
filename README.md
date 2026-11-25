@@ -1,64 +1,184 @@
-# Qoder Sites React starter
+# 考点雷达 · 课程/论文资料问答助手
 
-A React, TypeScript, Vite and Tailwind frontend with a bundled Shadcn component catalog. Vite produces static files in `dist/`. Server behavior belongs in the optional Qoder Sites Function, not a Node or framework server.
+> 期末周面前对一门课十几份讲义和往年卷，不用翻 8 个 PDF —— 打开网页点一下示例问题，10 秒给出**带出处的答案**，点引用能跳回原文那一句。
 
-## Develop
+**在线地址**：`<待填：Qoder Sites 公网链接>`（已部署到 Qoder Sites 并设为公开访问）
+**赛道**：2026 Qoder 高校创造力大赛 · StudyHack 学习科研
+**Qoder 账号 UID**：`<待填>`
+**开发方式**：开发与部署均由 Qoder 完成（Qoder Sites 站点工程 + Cloud Agents 后端）
 
-Use a Node version accepted by `package.json` (`^22.13.0 || >=24.0.0`). Select an installed compatible runtime and keep it selected for installation, development and build:
+---
+
+## 一、这是给谁做的
+
+期末周的本科生。一门课十几份讲义、往年卷、习题答案分散在不同 PDF 里，想搞清楚"这学期到底考什么"，得翻 8 个文件、翻 20 分钟。通用 AI 助手不给引用，你没法验证它有没有编。
+
+考点雷达把这些资料变成**一个可检索的小知识库**：问一句，得到 2–4 条可以直接抄进笔记的结论，每条结论后面挂着**可点击的引用**，点一下就跳回原文那一句并高亮。
+
+**内置 5 份资料 / 20 个章节 / 4 道预置示例问题** —— 打开即可用，不需要上传任何文件。
+
+| | 资料 | 章节 |
+|---|---|---|
+| A | 机器学习课程 · 第 3-4 章 讲义节选 | §3.1 经验风险与泛化能力 · §3.2 正则化与模型选择 · §4.1 偏差-方差分解 · §4.2 类别不平衡与评价指标 |
+| B | 线性代数复习提纲 · 三个必考结论 | §2.1 零空间与四个基本子空间 · §2.2 最小二乘解 = 正交投影 · §2.3 SVD 与低秩逼近 |
+| C | 概率论与数理统计 · 期末速记 | §1.1 大数定律与中心极限定理 · §1.2 最大似然、MAP 与贝叶斯估计 · §1.3 置信区间与假设检验 |
+| D | 示例论文摘要 · RAG for Knowledge-Intensive Tasks | D-1~D-4（虚构示例，非真实文献） |
+| E | 期末习题样例（含标准解答） | 题1~题3 + 参考解答 A1~A3 |
+
+---
+
+## 二、怎么用（5 步）
+
+1. 打开上面的公网链接（已设为公开访问，无需登录）
+2. 左侧选一份资料，或直接点顶部 4 个示例问题按钮
+3. 右侧出现答案：**每条结论后面紧跟一个引用块**，显示资料名 + 章节号 + 原文摘录
+4. **点引用块** → 左侧自动切到对应资料、展开对应章节、把被引用的那句原文**高亮并滚动到视野中央**
+5. 也可以自己打字提问（支持中英文，200 字以内）
+
+---
+
+## 三、技术实现
+
+### 3.1 检索层：纯浏览器本地计算，零密钥零后端
+
+`lib/text.ts` + `lib/retrieval.ts`
+
+- **中文分词不依赖外部词典**：英文按词、数字按串，中文取**单字 + 双字组合**（bigram），并维护一张纯虚词黑名单（`的/了/是/为什么/怎么…`）。这张表的作用是防止"为什么、怎么"这类高频虚词把不相关章节顶进 top-3。
+- **分句跳过 `$...$` 内部标点**，避免把 `0.05` 这类小数从中间切断。
+- **双通道召回**：
+  - 通道 A：**BM25**（`K1=1.5`, `B=0.75`），词面精确匹配
+  - 通道 B：**bigram TF-IDF 余弦向量**，捕捉近义/共现
+  - **RRF 融合**（`K=60`），取 top-3 章节
+- **句级选摘**：在召回的章节内部，再按 `0.6 × BM25 + 0.4 × 余弦` 选出最贴题的那一句，作为引用块的原文摘录 —— 所以引用不是整段，是**那一句**。
+
+### 3.2 生成层：Qoder Cloud Agents（服务端）
+
+`functions/handler.ts` + `functions/prompt.ts` + `functions/cloud-agents.mjs`
+
+- 浏览器**只送召回出的章节**，模型不接触完整知识库，也不接触任何密钥。
+- `SYSTEM_PROMPT` 硬约束："**不得使用片段以外的知识；证据不足时明确说明缺口，不要编造**"，并要求输出 2–4 条结论、每条标注支撑它的 `ref`、严格 JSON。
+- 服务端解析时**强制 ref 白名单**：模型只能引用传入片段里出现过的 `ref`；客户端收到响应后再过滤一次。两道闸，杜绝"引用了不存在的出处"。
+- 错误分类返回：`engine_unavailable` / `engine_initializing` / `rate_limited` / `invalid_input` / `upstream_error`，并带诊断号。
+- 限流 40 次/分钟；单次问答预算 42 秒（轮询 `agent.message` 事件）。
+
+### 3.3 引用定位：真的能跳，不是纯文本
+
+`components/CorpusPanel.tsx` + `src/App.tsx`
+
+每个句子有全站唯一 id（`${sectionId}:${n}`）。点击引用块 → 展开对应资料 → 展开对应章节 → **用背景色高亮被引用的那一句** → 滚动居中 → 答案区同步定位。
+
+### 3.4 密钥与数据安全
+
+| 项 | 做法 |
+|---|---|
+| API Key | 只存在于站点服务端（`Deno.env.get("QODER_PAT")`），**前端代码与响应体里都没有密钥** |
+| 示例资料 | 是 TypeScript 模块（`lib/corpus.ts`），**随站点发布一起走** |
+| 浏览器存储 | **全站零 localStorage / IndexedDB** —— 资料不存访问者浏览器，所以任何人都打开就能看到完整内容 |
+| 构建产物 | `dist/` 不含 source map |
+
+### 3.5 降级诚实
+
+如果 Cloud Agents 未就绪（首次冷启动、额度用尽等），站点会**退回本地原文抽取**，并在界面上**如实标注原因**，不冒充模型输出。检索与引用链在降级路径下依然完整。
+
+### 3.6 渲染与适配
+
+- **KaTeX** 渲染 `$...$` / `$$...$$` 行内与行间公式，`**强调**` 走 `<strong>`
+- **桌面**：左侧资料列表（330px）+ 右侧答案区
+- **窄屏**：顶部"答案 / 资料"单栏切换，资料列表折叠
+
+---
+
+## 四、目录结构
+
+```
+├── src/                    入口
+│   ├── App.tsx             三栏布局、提问流程、引用跳转
+│   ├── globals.css         主题变量（--site-accent 等）
+│   └── main.tsx
+├── lib/                    纯逻辑，可单测
+│   ├── corpus.ts           5 份资料 / 20 章节（唯一数据源）
+│   ├── text.ts             分句 · 分词 · 虚词表
+│   ├── retrieval.ts        BM25 + 向量 + RRF 融合
+│   └── answer.ts           客户端调用与降级
+├── components/             UI
+│   ├── AskBar.tsx          提问框 + 4 个示例问题
+│   ├── CorpusPanel.tsx     左侧资料列表 + 章节展开 + 高亮
+│   ├── AnswerPanel.tsx     右侧答案区 + 引用块
+│   ├── RichText.tsx        KaTeX / 强调渲染
+│   └── ui/                 Shadcn 组件目录
+├── functions/              Qoder Sites Function（Deno）
+│   ├── handler.ts          路由 + 限流 + Cloud Agents 调用
+│   ├── prompt.ts           校验 / 提示词 / 响应解析（无凭据可测）
+│   ├── cloud-agents.mjs    Cloud Agents 客户端
+│   └── index.ts            Deno 入口
+├── dev/                    仅本地，不进发布产物
+│   ├── fixture-prompt-check.ts   无凭据校验提示词与解析
+│   └── function-local.ts
+├── docs/
+│   ├── 素材包/             原创资料源文件（原创性证据）
+│   └── screenshots/        评分④截图规范
+└── scripts/                build / node 版本检查
+```
+
+---
+
+## 五、本地运行
+
+需要 Node `^22.13.0 || >=24.0.0`。
 
 ```sh
 npm ci
-npm run dev
+npm run dev          # http://127.0.0.1:5173
 ```
 
-Use the loopback URL printed by Vite. Edit `src/App.tsx`, `src/globals.css` and the title/description in `index.html`. Replace the sample page with the requested product before presenting a first meaningful preview. Import existing UI primitives from `@/components/ui/<component>` and compose them for the site's design. The neutral starter theme is a starting point, not the finished visual direction.
-
-For production output:
-
-```sh
-npm run build
-npm run preview
-```
-
-The build fixes `NODE_ENV=production` before loading Vite, independently of the terminal environment. It checks the frontend and bundled component types and emits `dist/index.html` and assets. `npm run preview` serves this output locally. Reuse passing checks while source is unchanged; no additional unit-test suite or browser QA is required by the template.
-
-## Optional Function
-
-The default page is entirely static and does not call a Function. For server behavior, adapt the public, credential-free example in `functions/handler.ts`. `functions/index.ts` is the Deno deployment entry point. Check `deno --version` before using a separate terminal for:
+Function 需要 Deno：
 
 ```sh
 npm run check:function
-npm run dev:function
+npm run dev:function   # http://127.0.0.1:8000
 ```
 
-If Deno is unavailable, the static frontend can still build and run. Keep Function validation pending until Deno or an equivalent existing Function checker is available; `npm run build` checks the frontend only. Local proxy requests also need a running compatible Function server.
-
-The local service binds to `127.0.0.1:8000`; Vite development and built preview proxy `/functions/v1/app` to it, preserving the path. Probe with an available HTTP tool or Node `fetch`; with `curl` installed, for example:
+Vite 会把 `/functions/v1/app` 代理到本地 Function；未启动 Function 时前端会自动降级到原文抽取兜底。
 
 ```sh
-curl --fail 'http://127.0.0.1:5173/functions/v1/app?name=Visitor'
+npm run build        # tsc --noEmit && vite build -> dist/
+npm run preview
 ```
 
-Use Vite's actual port if it differs. The same frontend request after deployment is routed by Qoder Sites. Local proxy configuration is not production routing. Keep local-only servers and fixtures in `dev/`, outside both publication directories. The included Function has no dependencies; add self-contained runtime imports as required. Frontend npm dependencies are not automatically installed in Functions.
+---
 
-## Publish with Qoder Sites
+## 六、每一条评分怎么拿
 
-Open a local conversation in this project and follow the `sites-hosting` skill. Workspace registration is optional. Use the directory returned by `get_context` with:
+| 官方评分项 | 本作品的落点 |
+|---|---|
+| **① 问题是否真实** | 期末周 / 多门课 / 十几份 PDF，是本人真实复习场景；作品名"考点雷达"与 4 道示例问题都指向同一具体场景 |
+| **② 核心流程是否走得通** | **打开就能用**：内置 5 份资料 + 4 道示例问题，无需上传、无需注册、无需读说明书；首屏即提问框 + 示例问题 + 资料列表 |
+| **③ 体验与设计** | 单一主操作；引用可点击跳转并高亮原文；数学公式 KaTeX 渲染；桌面双栏 / 窄屏单栏；浅色、留白、统一主色 |
+| **④ Qoder 使用深度** | 开发与部署**全部由 Qoder 完成**：`@sites` 站点工程 + `sites-building` 技能 + Cloud Agents 后端；多轮对话截图留痕（需求 → 执行 → 首次结果 → 修改要求 → 改后对比 → 部署发布） |
+| 技术复杂度不计分 | 刻意不堆功能。混合检索 + 服务端生成 + 引用定位三件事做透，胜过半成品大系统 |
 
-- `webDirectory: "dist"` after the build.
-- `spa: false` for the default single page; use `true` when adding client-side deep routes that need fallback.
-- `functionDirectory: "functions"` only if the application uses the Function. Omit it for static-only delivery.
+---
 
-The Sites tools prepare artifacts and generate the publication descriptor; publish completed hosted work by default, unless the user explicitly requests a preview first or defers publication. Do not upload the project root, `node_modules`, `dev`, or source as the web artifact. A successful build or release does not prove an external integration works.
+## 七、原创性
 
-For a new database-backed React page, follow the installed `sites-building` Skill's `references/function-backend.md`. Its assembled `assets/function-backend/` example includes `Notes.tsx`, Function routes and a schema using the platform's private database credentials. For a runnable records-and-attachments workbench, use that Skill's `references/records-example.md`; its setup command assembles a new project from this starter and keeps local fixtures outside deployment outputs. Preserve and adapt its application identity and ownership checks before exposing private records. `references/database.md`, `assets/database-react/App.tsx` and `assets/database-function/` are for existing legacy allocations only. These optional assets stay in the Skill rather than being copied into every static project.
+- `docs/素材包/` 内为**本项目原创编写**的示例资料与示例问题（按通用课程知识点整理，**非任何教材原文**；论文摘要 D 为虚构示例，不指向任何真实文献）。
+- UI 目录、hooks、工具函数与 Tailwind 样式来自 Qoder 站点脚手架，来源与许可见 [`PROVENANCE.md`](./PROVENANCE.md) 与 `vendor/`。
+- 本仓库不包含任何 API Key、账号凭据或他人作品。
 
-For database or Storage, follow the corresponding `sites-building` references and `sites-management` capability workflow. For AI, follow `sites-build-agent-app` and keep Cloud Agents access in the Function. Application credentials belong in server-side Sites Settings; frontend environment variables are public. This starter does not implement visitor login, database permissions, Cloud resource coordination or QCA sessions; add those only for the requested feature using the existing skills.
+---
 
-See `PROVENANCE.md` and `vendor/` for source attribution and the preserved stylesheet license.
+## 八、已知限制
 
-After copying the starter, rename `gitignore.template` to `.gitignore` before installing dependencies. This keeps the file available in npm and bundled CLI resources.
+- 语料固定为内置的 5 份资料（本次赛事的示例知识库），暂不支持访客上传文件。
+- 生成走 Cloud Agents，模型不可用时降级为原文抽取并明确标注（不伪装成模型输出）。
+- 首次调用需准备云端 Agent/Environment 资源，冷启动时可能提示"模型服务正在初始化"。
 
-## Design workbench
+---
 
-On Desktop, call `open_design_workbench` with the project name and design registration (pages and implemented Nudge capabilities). The tool creates the single `.站点名称.qoder.site` entry; update it through `update_design_workbench`. The starter deliberately contains no fixed-name project entry. Components consume `--site-*` variables defined in the existing application stylesheet. The workbench only previews temporary overrides and attaches requested changes to chat. The Agent implements changes and prepares publication artifacts before reporting completion; no dedicated theme file is required.
+<div align="center">
+
+**2026 Qoder 高校创造力大赛 · StudyHack 学习科研赛道**
+
+Qoder 账号 UID：`<待填>`
+
+</div>
