@@ -2,7 +2,7 @@
 
 > 期末周面前对一门课十几份讲义和往年卷，不用翻 8 个 PDF —— 打开网页点一下示例问题，10 秒给出**带出处的答案**，点引用能跳回原文那一句。
 
-**在线地址**：`<待填：Qoder Sites 公网链接>`（已部署到 Qoder Sites 并设为公开访问）
+**在线地址**：**https://kaodian-radar-kd71sijm0zk.qoder.zone/**（Qoder Sites 部署，已设为公开访问，无需登录）
 **赛道**：2026 Qoder 高校创造力大赛 · StudyHack 学习科研
 **Qoder 账号 UID**：`1570990773834519`
 **开发方式**：开发与部署均由 Qoder 完成（Qoder Sites 站点工程 + Cloud Agents 后端）
