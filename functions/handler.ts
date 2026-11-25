@@ -187,7 +187,14 @@ export async function handler(request: Request): Promise<Response> {
       ? parseStatements(raw, checked.value.evidence.map((item) => item.ref))
       : undefined;
     if (!statements) {
-      return json({ ok: false, error: "upstream_error", diagnosticId: crypto.randomUUID() }, 502);
+      // 只记录站点自带的公开语料片段，用于区分"没回复"和"回复解析不了"，不含密钥与访客数据。
+      console.error(JSON.stringify({
+        event: "answer_unusable",
+        replied: Boolean(raw),
+        refs: checked.value.evidence.map((item) => item.ref),
+        raw: (raw ?? "").slice(0, 300),
+      }));
+      return json({ ok: false, error: raw ? "engine_unparseable" : "engine_timeout", diagnosticId: crypto.randomUUID() }, 502);
     }
     return json({ ok: true, engine: "qca", statements });
   } catch (error) {

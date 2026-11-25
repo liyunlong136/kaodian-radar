@@ -1,7 +1,7 @@
 import { AlertTriangle, Crosshair, Loader2, Quote } from "lucide-react";
 import { RichText } from "@/components/RichText";
 import type { Answer } from "@/lib/answer";
-import type { Hit } from "@/lib/retrieval";
+import type { Hit, Span } from "@/lib/retrieval";
 import { cn } from "@/lib/utils";
 
 export type AskState = "idle" | "retrieving" | "answering" | "done" | "invalid";
@@ -11,6 +11,7 @@ export function AnswerPanel({
   state,
   message,
   hits,
+  spans,
   answer,
   onCite,
 }: {
@@ -18,8 +19,9 @@ export function AnswerPanel({
   state: AskState;
   message?: string;
   hits: Hit[];
+  spans: Span[];
   answer?: Answer;
-  onCite: (hit: Hit) => void;
+  onCite: (span: Span) => void;
 }) {
   if (state === "idle") {
     return (
@@ -64,7 +66,7 @@ export function AnswerPanel({
     );
   }
 
-  if (!hits.length) {
+  if (!spans.length) {
     return (
       <div className="flex flex-col gap-2 text-sm">
         <p className="font-medium">内置的 5 份资料里没有相关内容。</p>
@@ -107,22 +109,27 @@ export function AnswerPanel({
 
       <ol className="flex flex-col gap-4">
         {(answer?.statements ?? []).map((statement, index) => {
-          const cited = statement.refs
-            .map((ref) => hits.find((hit) => hit.sectionId === ref))
-            .filter((hit): hit is Hit => Boolean(hit));
+          const seen = new Set<string>();
+          const cited: Span[] = [];
+          for (const ref of statement.refs) {
+            if (seen.has(ref)) continue;
+            seen.add(ref);
+            const span = spans.find((item) => item.ref === ref);
+            if (span) cited.push(span);
+          }
           return (
             <li key={index} className="flex flex-col gap-2">
               <p className="text-sm leading-relaxed">
                 <RichText text={statement.text} />
-                {cited.map((hit) => (
-                  <sup key={hit.sectionId} className="ml-0.5 text-[10px] text-[var(--site-accent)]">
-                    [{hit.rank}]
+                {cited.map((span) => (
+                  <sup key={span.ref} className="ml-0.5 text-[10px] text-[var(--site-accent)]">
+                    [{span.rank}]
                   </sup>
                 ))}
               </p>
               <div className="flex flex-col gap-1.5">
-                {cited.map((hit) => (
-                  <CitationBlock key={hit.sectionId} hit={hit} onCite={onCite} />
+                {cited.map((span) => (
+                  <CitationBlock key={span.ref} span={span} onCite={onCite} />
                 ))}
               </div>
             </li>
@@ -133,25 +140,26 @@ export function AnswerPanel({
   );
 }
 
-function CitationBlock({ hit, onCite }: { hit: Hit; onCite: (hit: Hit) => void }) {
+function CitationBlock({ span, onCite }: { span: Span; onCite: (span: Span) => void }) {
   return (
     <button
       type="button"
-      onClick={() => onCite(hit)}
+      onClick={() => onCite(span)}
+      aria-label={`定位到 ${span.docShort} ${span.label} 的引用原文`}
       className="group w-full rounded-[var(--site-radius)] border bg-card px-3 py-2 text-left hover:border-[var(--site-accent)] hover:bg-secondary"
     >
       <span className="flex flex-wrap items-center gap-1.5 text-[11px]">
         <Quote className="size-3 shrink-0 text-muted-foreground" />
-        <span className="font-medium">{hit.docTitle}</span>
+        <span className="font-medium">{span.docTitle}</span>
         <span className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground group-hover:bg-background">
-          {hit.label} {hit.title}
+          {span.label} {span.title}
         </span>
         <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-[var(--site-accent)]">
           <Crosshair className="size-3" /> 定位原文
         </span>
       </span>
       <span className="mt-1 block text-xs leading-relaxed text-muted-foreground group-hover:text-foreground">
-        <RichText text={`“${hit.quote.text}”`} />
+        <RichText text={`“${span.quote.text}”`} />
       </span>
     </button>
   );

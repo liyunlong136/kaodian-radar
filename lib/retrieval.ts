@@ -24,6 +24,13 @@ export type SentenceIndex = {
 const K1 = 1.5;
 const B = 0.75;
 const RRF_K = 60;
+/** 一次回答最多展示几条引用块 */
+const SPAN_TOTAL = 4;
+/** 单章节最多贡献几条引用，保证既有跨章节多来源，也能同章节多句 */
+const MAX_PER_SECTION = 3;
+/** 与 Function 侧的片段上限保持一致，超出的补漏不再追加 */
+const SPAN_HARD_CAP = 5;
+const CJK_SINGLE = /^[㐀-䶿一-鿿]$/;
 
 const df = new Map<string, number>();
 const sectionIndex: SectionIndex[] = [];
@@ -43,7 +50,11 @@ function weightOf(tf: Map<string, number>): Map<string, number> {
 
 function termFreqs(tokens: string[]): Map<string, number> {
   const tf = new Map<string, number>();
-  for (const token of tokens) tf.set(token, (tf.get(token) ?? 0) + 1);
+  for (const token of tokens) {
+    // 单个汉字的信息量远低于二字词（"考""出""点"这类字会把不相干的资料顶上来），按 0.45 折权。
+    const weight = CJK_SINGLE.test(token) ? 0.45 : 1;
+    tf.set(token, (tf.get(token) ?? 0) + weight);
+  }
   return tf;
 }
 
@@ -51,7 +62,9 @@ function build(): void {
   for (const doc of DOCS) {
     for (const section of doc.sections) {
       const sentences = splitSentences(section.id, section.paragraphs);
-      const tokens = sentences.flatMap((sentence) => tokenize(sentence.text));
+      // 资料名 + 章节标题重复计入本节词频：问"这门机器学习课"时，讲义的各节能被正确路由到文档 A。
+      const meta = tokenize(`${doc.title} ${doc.short} ${section.label} ${section.title}`);
+      const tokens = [...meta, ...meta, ...sentences.flatMap((sentence) => tokenize(sentence.text))];
       sectionIndex.push({
         section,
         doc,
@@ -78,6 +91,8 @@ function build(): void {
 }
 
 build();
+
+const sectionById = new Map<string, SectionIndex>(sectionIndex.map((unit) => [unit.section.id, unit]));
 
 function idf(term: string): number {
   const n = df.get(term) ?? 0;
@@ -113,16 +128,31 @@ export type Hit = {
   docShort: string;
   label: string;
   title: string;
-  /** 引用摘录所用的原句（含 LaTeX） */
-  quote: Sentence;
   bm25: number;
   vector: number;
   fused: number;
   rank: number;
 };
 
+/** 句子级引用：章节负责召回，引用块负责精确到句 */
+export type Span = {
+  /** 发给生成端的引用号，如 "A-4.2#1" */
+  ref: string;
+  sectionId: string;
+  sentenceId: string;
+  docId: string;
+  docTitle: string;
+  docShort: string;
+  label: string;
+  title: string;
+  quote: Sentence;
+  rank: number;
+};
+
 export type RetrievalResult = {
   hits: Hit[];
+  /** top-3 章节内按相关度排好的原文句，供引用块与高亮使用 */
+  spans: Span[];
   /** 每个通道各自的排名，用于答案区展示召回过程 */
   channels: { bm25: string[]; vector: string[] };
 };
@@ -165,36 +195,68 @@ export function retrieve(question: string, topN = 3): RetrievalResult {
     .sort((a, b) => b.fused - a.fused)
     .slice(0, topN);
 
-  const hits: Hit[] = fused.map((item, index) => {
-    const sentences = sentenceIndex.filter((unit) => unit.sectionId === item.unit.section.id);
-    let best = sentences[0];
-    let bestScore = -Infinity;
-    for (const candidate of sentences) {
-      const score =
-        bm25(queryTf, candidate, avgdl || candidate.tokens.length) * 0.6 +
-        cosine(queryVec, candidate.vec) * 0.4;
-      if (score > bestScore) {
-        bestScore = score;
-        best = candidate;
-      }
-    }
+  const hits: Hit[] = fused.map((item, index) => ({
+    sectionId: item.unit.section.id,
+    docId: item.unit.doc.id,
+    docTitle: item.unit.doc.title,
+    docShort: item.unit.doc.short,
+    label: item.unit.section.label,
+    title: item.unit.section.title,
+    bm25: Number(item.bm25.toFixed(3)),
+    vector: Number(item.vector.toFixed(3)),
+    fused: Number(item.fused.toFixed(4)),
+    rank: index + 1,
+  }));
+
+  // 引用落到句子级：在召回章节内部再排一次名，单章节最多 MAX_PER_SECTION 句，
+  // 这样跨章节问题（Q1/Q3）能拿到多来源引用，同章节多句问题（Q2/Q4）也能逐句对应原文。
+  const sectionIds = new Set(hits.map((hit) => hit.sectionId));
+  const ranked = sentenceIndex
+    .filter((unit) => sectionIds.has(unit.sectionId))
+    .map((unit) => ({
+      unit,
+      score:
+        bm25(queryTf, unit, avgdl || unit.tokens.length) * 0.6 +
+        cosine(queryVec, unit.vec) * 0.4,
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  const picked: typeof ranked = [];
+  const perSection = new Map<string, number>();
+  for (const item of ranked) {
+    if (picked.length >= SPAN_TOTAL) break;
+    const used = perSection.get(item.unit.sectionId) ?? 0;
+    if (used >= MAX_PER_SECTION) continue;
+    picked.push(item);
+    perSection.set(item.unit.sectionId, used + 1);
+  }
+  for (const hit of hits) {
+    if (picked.length >= SPAN_HARD_CAP) break;
+    if (picked.some((item) => item.unit.sectionId === hit.sectionId)) continue;
+    const best = ranked.find((item) => item.unit.sectionId === hit.sectionId);
+    if (best) picked.push(best);
+  }
+  picked.sort((a, b) => b.score - a.score);
+
+  const spans: Span[] = picked.map((item, index) => {
+    const owner = sectionById.get(item.unit.sectionId)!;
     return {
-      sectionId: item.unit.section.id,
-      docId: item.unit.doc.id,
-      docTitle: item.unit.doc.title,
-      docShort: item.unit.doc.short,
-      label: item.unit.section.label,
-      title: item.unit.section.title,
-      quote: best?.sentence ?? { id: `${item.unit.section.id}:0`, text: item.unit.section.paragraphs[0] },
-      bm25: Number(item.bm25.toFixed(3)),
-      vector: Number(item.vector.toFixed(3)),
-      fused: Number(item.fused.toFixed(4)),
+      ref: item.unit.sentence.id,
+      sectionId: item.unit.sectionId,
+      sentenceId: item.unit.sentence.id,
+      docId: owner.doc.id,
+      docTitle: owner.doc.title,
+      docShort: owner.doc.short,
+      label: owner.section.label,
+      title: owner.section.title,
+      quote: item.unit.sentence,
       rank: index + 1,
     };
   });
 
   return {
     hits,
+    spans,
     channels: {
       bm25: bm25Ranked.slice(0, 5).map((item) => item.unit.section.id),
       vector: vectorRanked.slice(0, 5).map((item) => item.unit.section.id),

@@ -2,7 +2,7 @@ import { CorpusPanel, type ActiveCitation } from "@/components/CorpusPanel";
 import { AnswerPanel, type AskState } from "@/components/AnswerPanel";
 import { AskBar } from "@/components/AskBar";
 import { BookOpenText, FileQuestion, MessagesSquare } from "lucide-react";
-import { SECTION_COUNT, retrieve, type Hit } from "@/lib/retrieval";
+import { SECTION_COUNT, retrieve, type Hit, type Span } from "@/lib/retrieval";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DOCS } from "@/lib/corpus";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ export default function App() {
   const [state, setState] = useState<AskState>("idle");
   const [message, setMessage] = useState<string>();
   const [hits, setHits] = useState<Hit[]>([]);
+  const [spans, setSpans] = useState<Span[]>([]);
   const [answer, setAnswer] = useState<Answer>();
   const [active, setActive] = useState<ActiveCitation>(null);
   const [tab, setTab] = useState<"answer" | "docs">("answer");
@@ -47,11 +48,12 @@ export default function App() {
     await wait(220);
     const result = retrieve(value);
     setHits(result.hits);
+    setSpans(result.spans);
     setState("answering");
     await wait(200);
-    const generated = await generateAnswer(value, result.hits);
+    const generated = await generateAnswer(value, result.hits, result.spans);
     setAnswer(generated);
-    const first = result.hits[0];
+    const first = result.spans[0];
     if (first) {
       setExpandedDocs((prev) => new Set(prev).add(first.docId));
       setOpenSections((prev) => new Set(prev).add(first.sectionId));
@@ -59,12 +61,12 @@ export default function App() {
     setState("done");
   }, []);
 
-  const openCitation = useCallback((hit: Hit) => {
-    setExpandedDocs((prev) => new Set(prev).add(hit.docId));
-    setOpenSections((prev) => new Set(prev).add(hit.sectionId));
+  const openCitation = useCallback((span: Span) => {
+    setExpandedDocs((prev) => new Set(prev).add(span.docId));
+    setOpenSections((prev) => new Set(prev).add(span.sectionId));
     setKeyword("");
     setTab("docs");
-    setActive({ sectionId: hit.sectionId, sentenceId: hit.quote.id });
+    setActive({ sectionId: span.sectionId, sentenceId: span.sentenceId });
   }, []);
 
   const toggle = (setter: typeof setExpandedDocs) => (id: string) =>
@@ -150,7 +152,7 @@ export default function App() {
               {question}
             </p>
           )}
-          <AnswerPanel question={question} state={state} message={message} hits={hits} answer={answer} onCite={openCitation} />
+          <AnswerPanel question={question} state={state} message={message} hits={hits} spans={spans} answer={answer} onCite={openCitation} />
         </section>
       </main>
     </div>
