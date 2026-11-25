@@ -179,6 +179,6 @@ npm run preview
 
 **2026 Qoder 高校创造力大赛 · StudyHack 学习科研赛道**
 
-Qoder 账号 UID：`<待填>`
+Qoder 账号 UID：`1570990773834519`
 
 </div>
