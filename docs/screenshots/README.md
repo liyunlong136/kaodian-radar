@@ -34,18 +34,36 @@
 
 | 文件 | 实际内容 | 尺寸 |
 |---|---|---|
-| `01_需求描述全文.png` | Qoder 里"完整消息"弹窗 —— **第一轮需求描述全文**：谁在用/什么场景、5 份内置资料清单、页面结构、关键交互、硬性技术要求、视觉与体验 | 2317×1330 |
-| `02_Qoder执行过程.png` | Qoder 的**执行过程 + "已编辑 8 个文件"清单**（含每个文件的增删行数）+ 线上实测报告 | 2509×1521 |
-| `03_第一次生成结果.png` | 首次发布后的成果卡片「考点雷达 · Website」+ 线上实测结论 | 2284×1035 |
-| `04_修改要求对话.png` | "完整消息"弹窗 —— **第二轮要求**：示例问题换回指定 4 题、发布并保持公开访问、路径切到 D:\ | 1647×1105 |
-| `05_改完对比.png` | **站点首屏 + q1 的答案 + 每条结论后的引用块 + 左侧章节"本次召回"高亮** | 2410×1369 |
-| `06_部署发布界面.png` | "已发布并保持公开访问：https://kaodian-radar-kd71sijm0zk.qoder.zone" + 产出面板 + 技能 `sites:sites-building` | 2302×1495 |
-| `07_首轮PAT授权与执行中.png` | 首轮：Qoder Cloud Agents PAT 授权（密钥只进服务端）+ 正在写 `corpus.ts` / `text.ts` / `retrieval.ts` | 2526×1503 |
-| `08_GitHub建仓与推送.png` | GitHub 仓库创建页（Public / 不加 README / 不加 .gitignore / No license） | 2265×1209 |
+| `01_requirements.png` | Qoder 里"完整消息"弹窗 —— **第一轮需求描述全文**：谁在用/什么场景、5 份内置资料清单、页面结构、关键交互、硬性技术要求、视觉与体验 | 2317×1330 |
+| `02_execution.png` | Qoder 的**执行过程 + "已编辑 8 个文件"清单**（含每个文件的增删行数）+ 线上实测报告 | 2509×1521 |
+| `03_first_result.png` | 首次发布后的成果卡片「考点雷达 · Website」+ 线上实测结论 | 2284×1035 |
+| `04_revision_request.png` | "完整消息"弹窗 —— **第二轮要求**：示例问题换回指定 4 题、发布并保持公开访问、路径切到 D:\ | 1647×1105 |
+| `05_result_with_citations.png` | **站点首屏 + q1 的答案 + 每条结论后的引用块 + 左侧章节"本次召回"高亮** | 2410×1369 |
+| `06_deploy_published.png` | "已发布并保持公开访问：https://kaodian-radar-kd71sijm0zk.qoder.zone" + 产出面板 + 技能 `sites:sites-building` | 2302×1495 |
+| `07_pat_server_side.png` | 首轮：Qoder Cloud Agents PAT 授权（密钥只进服务端）+ 正在写 `corpus.ts` / `text.ts` / `retrieval.ts` | 2526×1503 |
+| `08_github_repo.png` | GitHub 仓库创建页（Public / 不加 README / 不加 .gitignore / No license） | 2265×1209 |
 
-> 💡 **`05_改完对比.png` 是评分④最有说服力的一张** —— 它同时证明了"打开就能用"（首屏即有内容）、"引用可点击回跳"（右侧引用块 + 左侧高亮）、以及"模型真的生成了"（答案区带 qca 生成的结论与引用角标）。
+> 💡 **`05_result_with_citations.png` 是评分④最有说服力的一张** —— 它同时证明了"打开就能用"（首屏即有内容）、"引用可点击回跳"（右侧引用块 + 左侧高亮）、以及"模型真的生成了"（答案区带 qca 生成的结论与引用角标）。
 >
-> ⚠️ **图 05 顶部那条橙色横幅**（"本轮未走模型生成：模型这轮的回复没能解析成带引用的结论"）是**降级路径的诚实提示**，不是 bug：模型输出解析失败时会退回原文抽取并如实标注。该路径已复测修复，后续发布版本不再出现。
+> ⚠️ **图 05 顶部那条橙色横幅**（"本轮未走模型生成：模型这轮的回复没能解析成带引用的结论"是**降级路径的诚实提示**，不是 bug：模型输出解析失败时会退回原文抽取并如实标注。该路径已复测修复，后续发布版本不再出现。
+
+### 🔗 直接可用的图片 URL
+
+文件名已全部改为 ASCII，可直接贴进任何 Markdown 编辑器的图片插入框（天池论坛用这一列）：
+
+```
+https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/01_requirements.png
+https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/02_execution.png
+https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/03_first_result.png
+https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/04_revision_request.png
+https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/05_result_with_citations.png
+https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/06_deploy_published.png
+https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/07_pat_server_side.png
+https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/08_github_repo.png
+```
+
+> ⚠️ raw.githubusercontent.com 在国内可能加载较慢。**如果天池的插入图片支持本地上传，优先用本地上传**（图片会存在天池自己的 CDN，评委秒开）。
+> 📌 **退路**：即使论坛帖里一张图都插不进去，**评分④照样拿得到** —— 官方"提交清单"只要求三项（公网链接 / 帖子五要素 / 写明 Qoder 账号），"建议多用截图"是建议；这 8 张原图在仓库里，评委点开仓库能看全、还能放大看文字。
 
 ## 补拍清单（验收清单用）
 
