@@ -42,6 +42,8 @@
 | `07_pat_server_side.png` | Qoder 首轮：**Cloud Agents PAT 授权弹窗**（"密钥不会进入前端代码"）+ 正在写 `corpus.ts` / `text.ts` / `retrieval.ts` | 2526×1503 |
 | `08_github_repo.png` | GitHub 建仓页（Public / 不加 README / No .gitignore / No license） | 2265×1209 |
 | `05_qca_answer.png` | **站点实拍（唯一的产品截图）**：问「类别不平衡时 AUC 和准确率哪个更合适」的**真实 Cloud Agents 输出** —— 右上角标注「Qoder Cloud Agents 生成」、**无降级横幅**；顶部显示召回 3 节及各自的 **BM25 分数 / 向量相似度**；右侧 3 条结论各挂引用块（每张带「定位原文」）；**左侧原文以主色高亮** | 1706×1279 |
+| `09_execution_process.png` | **Qoder 的思考与执行流（评分④最缺的那一环）**：需求描述 →「已处理 / 已思考」→「执行工具 1 次：读取素材包_示例资料合集.md」→「执行工具 3 次：读取 SKILL.md / README.md」→ **终端命令 已运行**（`cd ... && node ...`）→「脚手架已就位，现在装依赖并同时确认一件事」；右侧面板可见技能 `sites:sites-building`、产出 `README.md` 与 `考点雷达.qoder.site`、来源两份素材 | 2085×1401 |
+| `10_mobile.jpg` | **手机端实拍（iPhone Safari，竖屏）**：绿锁 HTTPS 域名、首屏提问框 + 4 个示例问题全部可点、**「答案 / 资料 5」单栏切换**（窄屏适配的实现）、空状态说明「检索 BM25 + 中文向量混合召回 → 只依据召回原文作答 → 每条结论挂可点击引用并高亮」，右下角 **「Made with Qoder」水印** | 1080×2376 |
 
 > ✅ **`05` 已重拍完成（11-26 13:23）**：换成了真实 Cloud Agents 输出的那张 —— 无降级横幅、右上角标注「Qoder Cloud Agents 生成」、显示 BM25 与向量双通道分数、**左侧原文高亮生效**。
 > 💡 这张的答案内容与 `docs/素材包/素材包_示例问题与期望答案.md` 里 Q4 的期望引用**逐条一致**（否定准确率 → PR-AUC → 类别权重/重采样 + 阈值不用 0.5）。
@@ -59,6 +61,8 @@ https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screensho
 https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/06_deploy_published.png
 https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/07_pat_server_side.png
 https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/08_github_repo.png
+https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/09_execution_process.png
+https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/10_mobile.jpg
 ```
 
 > ⚠️ raw.githubusercontent.com 在国内可能加载较慢。**如果天池的插入图片支持本地上传，优先用本地上传**（图片会存在天池自己的 CDN，评委秒开）。
