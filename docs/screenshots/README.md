@@ -41,10 +41,10 @@
 | `03_first_result.png` | Qoder 界面另一角度：已发布 + 线上实测 + 「考点雷达 · Website」卡片 + 8 文件清单 | 2284×1035 |
 | `07_pat_server_side.png` | Qoder 首轮：**Cloud Agents PAT 授权弹窗**（"密钥不会进入前端代码"）+ 正在写 `corpus.ts` / `text.ts` / `retrieval.ts` | 2526×1503 |
 | `08_github_repo.png` | GitHub 建仓页（Public / 不加 README / No .gitignore / No license） | 2265×1209 |
-| `05_result_with_citations.png` | **站点实拍**（唯一的产品截图）：首屏提问框 + 4 个示例问题 + 左侧资料列表与章节 + 右侧答案区与 5 张引用卡片（每张带「定位原文」按钮） | 2410×1369 |
+| `05_qca_answer.png` | **站点实拍（唯一的产品截图）**：问「类别不平衡时 AUC 和准确率哪个更合适」的**真实 Cloud Agents 输出** —— 右上角标注「Qoder Cloud Agents 生成」、**无降级横幅**；顶部显示召回 3 节及各自的 **BM25 分数 / 向量相似度**；右侧 3 条结论各挂引用块（每张带「定位原文」）；**左侧原文以主色高亮** | 1706×1279 |
 
-> ⚠️ **`05_result_with_citations.png` 需重拍**：这张拍到的是**降级路径** —— 右上角橙色横幅写着「本轮未走模型生成：模型这轮的回复没能解析成带引用的结论」，此时答案区展示的是本地原文抽取结果，而非 Cloud Agents 生成的结论；左侧也只是章节正文正常展开，**没有出现引用高亮**（高亮要点了「定位原文」才触发）。
-> 重拍方法见下方「需重拍的截图」。
+> ✅ **`05` 已重拍完成（11-26 13:23）**：换成了真实 Cloud Agents 输出的那张 —— 无降级横幅、右上角标注「Qoder Cloud Agents 生成」、显示 BM25 与向量双通道分数、**左侧原文高亮生效**。
+> 💡 这张的答案内容与 `docs/素材包/素材包_示例问题与期望答案.md` 里 Q4 的期望引用**逐条一致**（否定准确率 → PR-AUC → 类别权重/重采样 + 阈值不用 0.5）。
 
 ### 🔗 直接可用的图片 URL
 
@@ -55,7 +55,7 @@ https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screensho
 https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/02_execution.png
 https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/03_first_result.png
 https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/04_revision_request.png
-https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/05_result_with_citations.png
+https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/05_qca_answer.png
 https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/06_deploy_published.png
 https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/07_pat_server_side.png
 https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screenshots/08_github_repo.png
@@ -64,13 +64,13 @@ https://raw.githubusercontent.com/liyunlong136/kaodian-radar/main/docs/screensho
 > ⚠️ raw.githubusercontent.com 在国内可能加载较慢。**如果天池的插入图片支持本地上传，优先用本地上传**（图片会存在天池自己的 CDN，评委秒开）。
 > 📌 **退路**：即使论坛帖里一张图都插不进去，**评分④照样拿得到** —— 官方"提交清单"只要求三项（公网链接 / 帖子五要素 / 写明 Qoder 账号），"建议多用截图"是建议；这 8 张原图在仓库里，评委点开仓库能看全、还能放大看文字。
 
-## 📷 需重拍 / 需补拍的截图
+## 📷 还可补拍的截图
 
 | 目标 | 怎么拍 | 为什么 |
 |---|---|---|
-| **重拍 `05_result_with_citations.png`** | ① 打开站点 → ② 点示例问题 **q3** → ③ **等答案出来，确认右上角没有橙色横幅**（有横幅说明这次走了本地兜底，等下一轮再截）→ ④ **点任意一张引用卡右上角的「定位原文」** → ⑤ 等左侧章节展开、那句原文出现背景高亮 → ⑥ 截图，覆盖原文件 | 现有这张拍到的是降级路径（本地原文抽取），证明不了"Cloud Agents 生成"，也没拍到引用高亮。这是最关键的产品证据 |
 | **补拍「执行过程」**（可选） | 在 Qoder 对话里往上滚到「执行工具 130 次，其中 6 次失败」「已思考」那段，**把它展开**再截一张 | 官方评分④要看"**过程**是否讲得清楚"。现有 02/06/07 都是**结果画面**（改动清单 + 线上实测），Qoder 的思考流是折叠的，展开才看得到 |
 | **补拍「手机端」**（可选但推荐） | 手机浏览器打开站点，竖屏，点一个示例问题后截图 | 官方评分③"体验与设计"，评委可能用手机点开；有手机截图更可信 |
+| **重拍 `05` 为桌面全屏**（可选） | 现版是手机拍屏（能看到任务栏和显示器边框），观感略糙。用电脑浏览器全屏截一张同款即可 | 证据力已经够了，这张只是观感问题 |
 
 > ⏱️ **重拍 05 只要 2 分钟，而它是评分④的核心证据。** 模型生成本身是通的（Cloud Agents 侧实测 `engine:qca` 正常返回），偶发解析失败才走兜底 —— 多点两下、等到没有横幅的那一轮就行。
 >
