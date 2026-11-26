@@ -6,6 +6,7 @@
 **赛道**：2026 Qoder 高校创造力大赛 · StudyHack 学习科研
 **Qoder 账号 UID**：`1570990773834519`
 **开发方式**：开发与部署均由 Qoder 完成（Qoder Sites 站点工程 + Cloud Agents 后端）
+**作品帖**：[天池赛题页论坛](https://tianchi.aliyun.com/competition/entrance/532536) · 标题「【StudyHack】考点雷达 · 课程/论文资料问答助手」
 
 ---
 
